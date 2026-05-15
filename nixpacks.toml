@@ -1,0 +1,14 @@
+# Railway uses Nixpacks to build the image. Explicit phases avoid surprises
+# when auto-detection chooses an unexpected default.
+
+[phases.setup]
+nixPkgs = ["nodejs_20"]
+
+[phases.install]
+cmds = ["npm ci --include=dev || npm install --include=dev"]
+
+[phases.build]
+cmds = ["npm run build"]
+
+[start]
+cmd = "node server/index.js"

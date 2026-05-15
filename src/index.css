@@ -1,0 +1,108 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Default theme — overwritten at runtime by src/lib/theme.js when the user
+   picks a different palette from Settings. Space-separated triples so Tailwind's
+   `rgb(var(--…) / <alpha-value>)` syntax works for opacity modifiers. */
+:root {
+  --zen-accent: #fb7185;
+  --zen-accent2: #f472b6;
+  --zen-accent-rgb: 251 113 133;
+  --zen-accent2-rgb: 244 114 182;
+}
+
+html, body, #root { height: 100%; }
+body {
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  background: #0a0a0b;
+}
+
+/* Subtle ambient glow */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+  background:
+    radial-gradient(60% 50% at 20% 0%, rgb(var(--zen-accent-rgb) / 0.10), transparent 60%),
+    radial-gradient(50% 40% at 80% 10%, rgb(var(--zen-accent2-rgb) / 0.08), transparent 60%);
+}
+#root { position: relative; z-index: 1; }
+
+::-webkit-scrollbar { width: 10px; height: 10px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #1f1f24; border-radius: 6px; }
+::-webkit-scrollbar-thumb:hover { background: #2a2a31; }
+
+.mono { font-family: 'JetBrains Mono', Menlo, monospace; }
+
+.card {
+  @apply bg-zen-panel/80 border border-zen-border rounded-2xl backdrop-blur-sm;
+  box-shadow: 0 1px 0 rgba(255,255,255,0.02) inset, 0 8px 24px rgba(0,0,0,0.25);
+}
+
+.btn {
+  @apply px-3 py-1.5 rounded-lg border border-zen-border bg-zen-panel hover:bg-[#16161b] hover:border-[#2a2a31] transition text-sm flex items-center gap-2;
+}
+.btn:disabled { opacity: 0.45; cursor: not-allowed; }
+.btn:disabled:hover { background: #111114; border-color: #1f1f24; }
+
+.btn-primary {
+  @apply px-5 py-2.5 rounded-lg font-medium transition flex items-center gap-2;
+  background: linear-gradient(135deg, rgb(var(--zen-accent-rgb)) 0%, rgb(var(--zen-accent2-rgb)) 100%);
+  color: #0a0a0b;
+  box-shadow: 0 4px 16px rgb(var(--zen-accent-rgb) / 0.28);
+}
+.btn-primary:hover { box-shadow: 0 4px 20px rgb(var(--zen-accent-rgb) / 0.45); }
+.btn-primary:disabled { opacity: 0.5; box-shadow: none; cursor: not-allowed; }
+
+.input {
+  @apply w-full bg-[#0d0d10] border border-zen-border rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-zen-accent transition mono;
+}
+.input:focus { box-shadow: 0 0 0 3px rgb(var(--zen-accent-rgb) / 0.15); }
+
+.input-hero {
+  @apply w-full bg-[#0d0d10]/80 border border-zen-border rounded-xl px-4 py-3.5 text-base focus:outline-none transition mono;
+}
+.input-hero:focus {
+  border-color: rgb(var(--zen-accent-rgb));
+  box-shadow: 0 0 0 4px rgb(var(--zen-accent-rgb) / 0.15), 0 8px 32px rgba(0,0,0,0.3);
+}
+
+.hero-bar:focus-within {
+  border-color: rgb(var(--zen-accent-rgb));
+  box-shadow: 0 0 0 4px rgb(var(--zen-accent-rgb) / 0.15), 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.chip {
+  @apply inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-xs border border-zen-border bg-[#0d0d10] mono;
+}
+
+.kbd {
+  @apply px-1.5 py-0.5 rounded text-[10px] border border-zen-border bg-[#16161b] mono text-zen-muted;
+}
+
+@keyframes slidein {
+  from { transform: translateX(20px); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+@keyframes fadein {
+  from { opacity: 0; transform: translateY(4px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadein 0.3s ease-out both; }
+
+/* React Flow theming */
+.react-flow__node { font-family: 'JetBrains Mono', Menlo, monospace; }
+.react-flow__edge-path { stroke: #4b4b54; }
+.react-flow__attribution { display: none; }
+.react-flow__controls-button {
+  background: #111114 !important;
+  border: 1px solid #1f1f24 !important;
+  color: #e7e7ea !important;
+}
+.react-flow__controls-button:hover { background: #16161b !important; }
+.react-flow__controls-button svg { fill: #e7e7ea; }
