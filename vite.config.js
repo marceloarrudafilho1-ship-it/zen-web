@@ -6,6 +6,10 @@ import react from '@vitejs/plugin-react';
 // /api on the same port, so no proxy is needed.
 export default defineConfig({
   plugins: [react()],
+  // SPA is mounted at /app/ in production. base must be set so the build
+  // emits asset URLs as /app/assets/... — otherwise the bundled JS/CSS
+  // would 404 when the page is served under /app.
+  base: '/app/',
   server: {
     port: 5173,
     proxy: {

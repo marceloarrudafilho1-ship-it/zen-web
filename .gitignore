@@ -4,3 +4,10 @@ dist
 .env.local
 *.log
 .DS_Store
+
+# Landing-page download payload is built/hosted separately to keep the repo
+# under GitHub's 100 MB-per-file limit. Drop a ZenSetup.exe here for local
+# testing of the desktop-download CTA; deploy users get the same file from
+# GitHub Releases (or wherever you choose to host it).
+landing/downloads/
+

@@ -121,6 +121,12 @@ export function LoginPage({ onAuthed }) {
             <Lock size={11} /> Sessions are stored in an httpOnly cookie. Sign-up is invite-only.
           </p>
         </div>
+
+        <div className="text-center mt-4">
+          <a href="/" className="text-[11px] text-zen-muted hover:text-zen-text transition">
+            ← Back to homepage
+          </a>
+        </div>
       </div>
     </div>
   );
