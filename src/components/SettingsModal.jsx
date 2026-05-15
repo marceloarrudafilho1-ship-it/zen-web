@@ -12,7 +12,7 @@ export function SettingsModal({ open, onClose, keys, onSave }) {
 
   return (
     <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[60] flex items-center justify-center p-4 fade-in" onClick={onClose}>
-      <div className="card w-full max-w-md p-6" onClick={e => e.stopPropagation()}>
+      <div className="card w-full max-w-3xl p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
         <div className="flex items-start justify-between mb-1">
           <div>
             <h2 className="text-lg font-semibold">API keys</h2>
@@ -26,28 +26,30 @@ export function SettingsModal({ open, onClose, keys, onSave }) {
           </button>
         </div>
 
-        <div className="space-y-4 mt-6">
-          <Field
-            label="Etherscan v2"
-            sub="Covers all EVM chains with one key"
-            link="https://etherscan.io/myapikey"
-            value={draft.etherscan}
-            onChange={v => setDraft(d => ({ ...d, etherscan: v }))}
-          />
-          <Field
-            label="Helius"
-            sub="Required for Solana"
-            link="https://dashboard.helius.dev"
-            value={draft.helius}
-            onChange={v => setDraft(d => ({ ...d, helius: v }))}
-          />
-          <Field
-            label="CoinGecko Pro"
-            sub="Optional — boosts price rate limit"
-            link="https://www.coingecko.com/en/api/pricing"
-            value={draft.coingecko}
-            onChange={v => setDraft(d => ({ ...d, coingecko: v }))}
-          />
+        <div className="space-y-5 mt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Field
+              label="Etherscan v2"
+              sub="Covers all EVM chains with one key"
+              link="https://etherscan.io/myapikey"
+              value={draft.etherscan}
+              onChange={v => setDraft(d => ({ ...d, etherscan: v }))}
+            />
+            <Field
+              label="Helius"
+              sub="Required for Solana"
+              link="https://dashboard.helius.dev"
+              value={draft.helius}
+              onChange={v => setDraft(d => ({ ...d, helius: v }))}
+            />
+            <Field
+              label="CoinGecko Pro"
+              sub="Optional — boosts price rate limit"
+              link="https://www.coingecko.com/en/api/pricing"
+              value={draft.coingecko}
+              onChange={v => setDraft(d => ({ ...d, coingecko: v }))}
+            />
+          </div>
 
           <div className="border-t border-zen-border pt-4 mt-2">
             <div className="text-xs uppercase tracking-wider text-zen-muted mb-3">Theme</div>
@@ -81,7 +83,7 @@ export function SettingsModal({ open, onClose, keys, onSave }) {
 
           <div className="border-t border-zen-border pt-4 mt-2">
             <div className="text-xs uppercase tracking-wider text-zen-muted mb-3">Investigation (Info tab)</div>
-            <div className="space-y-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <Field
                 label="Snusbase"
                 sub="Breach-data search — required for Info tab"
