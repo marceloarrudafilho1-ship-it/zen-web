@@ -4,7 +4,7 @@
 
 import { useState } from 'react';
 import { apiLogin, apiSignup } from '../../api/auth.js';
-import { Logo, Lock, Spinner } from '../Icons.jsx';
+import { Logo, Spinner } from '../Icons.jsx';
 
 export function LoginPage({ onAuthed }) {
   const [mode, setMode] = useState('login'); // 'login' | 'signup'
@@ -117,9 +117,6 @@ export function LoginPage({ onAuthed }) {
             </button>
           </form>
 
-          <p className="text-[11px] text-zen-muted mt-4 flex items-center justify-center gap-1.5">
-            <Lock size={11} /> Sessions are stored in an httpOnly cookie. Sign-up is invite-only.
-          </p>
         </div>
 
         <div className="text-center mt-4">
