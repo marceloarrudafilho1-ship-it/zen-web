@@ -118,12 +118,6 @@ export function LoginPage({ onAuthed }) {
           </form>
 
         </div>
-
-        <div className="text-center mt-4">
-          <a href="/" className="text-[11px] text-zen-muted hover:text-zen-text transition">
-            ← Back to homepage
-          </a>
-        </div>
       </div>
     </div>
   );
