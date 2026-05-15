@@ -1282,3 +1282,41 @@ button { font: inherit; cursor: pointer; }
   }
 }
 
+
+/* ─────────────────────────────────────────────────────────
+   Button refresh — inverted primary (transparent rose-tinted
+   with rose text + border, matches the in-app accent style),
+   plus a slimmer nav "Sign in" pill.
+   ───────────────────────────────────────────────────────── */
+.btn--primary {
+  background: rgba(251, 113, 133, 0.10);
+  color: #fb7185;
+  border: 1px solid rgba(251, 113, 133, 0.45);
+  box-shadow: none;
+}
+.btn--primary:hover {
+  background: rgba(251, 113, 133, 0.18);
+  border-color: rgba(251, 113, 133, 0.75);
+  transform: translateY(-1px);
+}
+.btn--primary .btn__kbd {
+  font-family: var(--f-mono); font-size: 12px; opacity: .85;
+  padding: 2px 6px;
+  background: rgba(251, 113, 133, 0.12);
+  color: #fb7185;
+  border: 1px solid rgba(251, 113, 133, 0.30);
+  border-radius: 4px;
+}
+/* The sweeping white sheen overlay looked good on a solid gradient but
+   reads as a flash of light over a transparent button. Tone it down so
+   the inverted style stays calm. */
+.btn--primary::after {
+  background: linear-gradient(110deg, transparent 30%, rgba(251,113,133,0.20) 50%, transparent 70%);
+}
+
+/* Slimmer nav "Sign in" pill — same horizontal padding, less vertical. */
+.nav__cta {
+  padding-top: 6px;
+  padding-bottom: 6px;
+  font-size: 13px;
+}
