@@ -335,6 +335,8 @@ const CHAIN_LOGOS = {
   polygon: PolygonLogo,
   bsc: BnbLogo,
   solana: SolanaLogo,
+  xrp: XrpLogo,
+  litecoin: LitecoinLogo,
 };
 
 function EthLogo({ size }) {
@@ -420,6 +422,26 @@ function SolanaLogo({ size }) {
       <path d="M9.6 21.4a.7.7 0 0 1 .5-.2h13.4c.32 0 .48.4.25.62l-2.65 2.65a.7.7 0 0 1-.5.2H7.2c-.32 0-.48-.4-.25-.62l2.65-2.65z" fill="url(#solGradA)"/>
       <path d="M9.6 11.5a.7.7 0 0 1 .5-.2h13.4c.32 0 .48.4.25.62L21.1 14.57a.7.7 0 0 1-.5.2H7.2c-.32 0-.48-.4-.25-.62L9.6 11.5z" fill="url(#solGradA)"/>
       <path d="M21.1 16.45a.7.7 0 0 0-.5-.2H7.2c-.32 0-.48.4-.25.62l2.65 2.65a.7.7 0 0 0 .5.2h13.4c.32 0 .48-.4.25-.62l-2.65-2.65z" fill="url(#solGradA)"/>
+    </svg>
+  );
+}
+
+function XrpLogo({ size }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32">
+      <circle cx="16" cy="16" r="16" fill="#23292f"/>
+      <path d="M9 9 L16 15.5 L23 9 M9 23 L16 16.5 L23 23"
+        stroke="#fff" strokeWidth="2.2" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+function LitecoinLogo({ size }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 32 32">
+      <circle cx="16" cy="16" r="16" fill="#345d9d"/>
+      <path d="M16.3 6.4 L13 18.6 L10.6 19.4 L10 21.6 L12.4 20.8 L11.4 24.6 L24 24.6 L24.6 21.8 L14.8 21.8 L15.7 18.6 L18 17.9 L18.6 15.8 L16.3 16.5 L18.6 7.2 Z"
+        fill="#fff"/>
     </svg>
   );
 }

@@ -2,6 +2,7 @@
 // top-N IN / OUT / SWAP rankings.
 
 import { DEX_ROUTERS, STABLECOINS, looksLikeSwapInput } from '../api/evm.js';
+import { RIPPLE_EPOCH_OFFSET } from '../api/xrpl.js';
 
 // Unified shape:
 // {
@@ -187,6 +188,106 @@ export function normalizeSolana({ txs, address }) {
 function short(addr) {
   if (!addr) return '?';
   return addr.slice(0, 4) + '…' + addr.slice(-4);
+}
+
+// XRP Ledger — focus on Payment transactions in XRP (drops). Issued-currency
+// IOU payments (where tx.Amount is an object, not a string) are skipped because
+// they require pricing info we don't pull.
+export function normalizeXrp({ txs, address }) {
+  const out = [];
+  for (const wrap of txs) {
+    // account_tx wraps each tx; older nodes return it under `tx` or `tx_json`.
+    const tx = wrap.tx || wrap.tx_json || wrap;
+    if (!tx || tx.TransactionType !== 'Payment') continue;
+    if (typeof tx.Amount !== 'string') continue; // IOU/issued-currency: skip
+
+    const sender = tx.Account;
+    const recipient = tx.Destination;
+    if (sender !== address && recipient !== address) continue;
+
+    const xrp = Number(tx.Amount) / 1e6; // drops → XRP
+    if (!Number.isFinite(xrp) || xrp <= 0) continue;
+
+    const direction = sender === address ? 'out' : 'in';
+    const counterparty = sender === address ? recipient : sender;
+    const blockTime = Number(tx.date || 0) + RIPPLE_EPOCH_OFFSET;
+    const hash = tx.hash || wrap.hash;
+
+    out.push({
+      id: `xrp:${hash}`,
+      hash,
+      blockTime,
+      direction,
+      counterparty,
+      asset: { symbol: 'XRP', address: 'native', decimals: 6, coingeckoId: 'ripple' },
+      amount: xrp,
+      usd: null,
+      kind: 'native',
+      chain: 'xrp',
+      raw: wrap,
+    });
+  }
+  return out.sort((a, b) => a.blockTime - b.blockTime);
+}
+
+// Litecoin — UTXO model. A "Transfer" here is the *net change* the wallet
+// experienced in a single transaction. Counterparty heuristic: the largest
+// non-self input (for inbound) or non-self output (for outbound) — usually
+// the merchant / exchange address, occasionally a change address. Good enough
+// for top-N visualisation; cluster work would need richer input-set analysis.
+export function normalizeLitecoin({ txs, address }) {
+  const out = [];
+  for (const tx of txs) {
+    let inFromUs = 0;   // sats we contributed via inputs
+    let outToUs = 0;    // sats we received via outputs
+    const otherInputs = new Map();   // addr → total sats sent by that input
+    const otherOutputs = new Map();  // addr → total sats received by that output
+
+    for (const vin of tx.vin || []) {
+      const a = vin.prevout?.scriptpubkey_address;
+      const v = vin.prevout?.value || 0;
+      if (!a) continue;
+      if (a === address) inFromUs += v;
+      else otherInputs.set(a, (otherInputs.get(a) || 0) + v);
+    }
+    for (const vout of tx.vout || []) {
+      const a = vout.scriptpubkey_address;
+      const v = vout.value || 0;
+      if (!a) continue;
+      if (a === address) outToUs += v;
+      else otherOutputs.set(a, (otherOutputs.get(a) || 0) + v);
+    }
+
+    const netSats = outToUs - inFromUs;
+    if (netSats === 0) continue;
+
+    const direction = netSats > 0 ? 'in' : 'out';
+    const counterparty = largestKey(direction === 'in' ? otherInputs : otherOutputs) || 'unknown';
+
+    const blockTime = tx.status?.block_time || 0;
+    const ltc = Math.abs(netSats) / 1e8;
+
+    out.push({
+      id: `ltc:${tx.txid}`,
+      hash: tx.txid,
+      blockTime,
+      direction,
+      counterparty,
+      asset: { symbol: 'LTC', address: 'native', decimals: 8, coingeckoId: 'litecoin' },
+      amount: ltc,
+      usd: null,
+      kind: 'native',
+      chain: 'litecoin',
+      raw: tx,
+    });
+  }
+  return out.sort((a, b) => a.blockTime - b.blockTime);
+}
+
+function largestKey(map) {
+  let best = null, bestVal = -Infinity;
+  for (const [k, v] of map) if (v > bestVal) { best = k; bestVal = v; }
+  return best;
 }
 
 export function priceTransfers(transfers, priceLookup) {

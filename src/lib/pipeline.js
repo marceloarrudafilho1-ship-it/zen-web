@@ -2,8 +2,10 @@
 
 import { EVM_CHAINS, fetchAllTransactions } from '../api/evm.js';
 import { fetchSolanaTransactions } from '../api/solana.js';
+import { fetchXrplTransactions } from '../api/xrpl.js';
+import { fetchLitecoinTransactions } from '../api/litecoin.js';
 import { getPriceSeries, getPriceSeriesByContract, priceAt } from '../api/prices.js';
-import { normalizeEvm, normalizeSolana, priceTransfers, topByDirection } from './analyzer.js';
+import { normalizeEvm, normalizeSolana, normalizeXrp, normalizeLitecoin, priceTransfers, topByDirection } from './analyzer.js';
 import { buildBalanceSeries, findExtrema } from './balance.js';
 import { labelFor } from './labels.js';
 import { classifyTemperature } from './temperature.js';
@@ -23,6 +25,14 @@ export async function analyzeWallet({ chain, address, keys, onProgress }) {
     const txs = await fetchSolanaTransactions({ address, apiKey: keys.helius, onProgress });
     transfers = normalizeSolana({ txs, address });
     chainConfig = { coingeckoId: 'solana', symbol: 'SOL', name: 'Solana' };
+  } else if (chain === 'xrp') {
+    const txs = await fetchXrplTransactions({ address, onProgress });
+    transfers = normalizeXrp({ txs, address });
+    chainConfig = { coingeckoId: 'ripple', symbol: 'XRP', name: 'XRP' };
+  } else if (chain === 'litecoin') {
+    const txs = await fetchLitecoinTransactions({ address, onProgress });
+    transfers = normalizeLitecoin({ txs, address });
+    chainConfig = { coingeckoId: 'litecoin', symbol: 'LTC', name: 'Litecoin' };
   } else {
     if (!keys.etherscan) throw new Error('Etherscan API key required — set in Settings.');
     const cfg = EVM_CHAINS[chain];
@@ -193,6 +203,12 @@ export async function traceCounterpartyFlow({ chain, address, direction = 'out',
       address, apiKey: keys.helius, onProgress, maxTxs: 200,
     });
     transfers = normalizeSolana({ txs, address });
+  } else if (chain === 'xrp') {
+    const txs = await fetchXrplTransactions({ address, onProgress, limit: 200 });
+    transfers = normalizeXrp({ txs, address });
+  } else if (chain === 'litecoin') {
+    const txs = await fetchLitecoinTransactions({ address, onProgress, maxPages: 4 });
+    transfers = normalizeLitecoin({ txs, address });
   } else {
     if (!keys.etherscan) throw new Error('Etherscan API key required');
     const cfg = EVM_CHAINS[chain];

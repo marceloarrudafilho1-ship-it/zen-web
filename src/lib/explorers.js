@@ -11,6 +11,8 @@ const BASES = {
   polygon:  'https://polygonscan.com',
   bsc:      'https://bscscan.com',
   solana:   'https://solscan.io',
+  xrp:      'https://xrpscan.com',
+  litecoin: 'https://litecoinspace.org',
 };
 
 export function explorerUrl(chain, kind, value) {
@@ -23,6 +25,13 @@ export function explorerUrl(chain, kind, value) {
       ? `${base}/tx/${value}`
       : `${base}/account/${value}`;
   }
+  if (chain === 'xrp') {
+    // XRPScan: /account/<addr> for wallets, /tx/<hash> for transactions.
+    return kind === 'tx'
+      ? `${base}/tx/${value}`
+      : `${base}/account/${value}`;
+  }
+  // EVM family and litecoinspace.org both use /address/ and /tx/.
   return kind === 'tx'
     ? `${base}/tx/${value}`
     : `${base}/address/${value}`;
@@ -37,6 +46,8 @@ export function explorerName(chain) {
     case 'polygon':  return 'Polygonscan';
     case 'bsc':      return 'BscScan';
     case 'solana':   return 'Solscan';
+    case 'xrp':      return 'XRPSCAN';
+    case 'litecoin': return 'LitecoinSpace';
     default:         return 'Explorer';
   }
 }

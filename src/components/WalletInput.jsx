@@ -4,7 +4,9 @@ import { Search, ChainIcon, ChevronDown } from './Icons.jsx';
 
 const CHAIN_OPTIONS = [
   ...Object.entries(EVM_CHAINS).map(([k, v]) => ({ value: k, label: v.name })),
-  { value: 'solana', label: 'Solana' },
+  { value: 'solana',   label: 'Solana' },
+  { value: 'xrp',      label: 'XRP' },
+  { value: 'litecoin', label: 'Litecoin' },
 ];
 
 export function WalletInput({ onAnalyze, busy, variant = 'compact' }) {
