@@ -230,12 +230,15 @@ export function normalizeXrp({ txs, address }) {
   return out.sort((a, b) => a.blockTime - b.blockTime);
 }
 
-// Litecoin — UTXO model. A "Transfer" here is the *net change* the wallet
+// UTXO (Bitcoin / Litecoin) — A "Transfer" here is the *net change* the wallet
 // experienced in a single transaction. Counterparty heuristic: the largest
-// non-self input (for inbound) or non-self output (for outbound) — usually
-// the merchant / exchange address, occasionally a change address. Good enough
-// for top-N visualisation; cluster work would need richer input-set analysis.
-export function normalizeLitecoin({ txs, address }) {
+// non-self input (for inbound) or non-self output (for outbound) — usually the
+// merchant / exchange address, occasionally a change address. Good enough for
+// top-N visualisation; cluster work would need richer input-set analysis.
+//
+// Bitcoin and Litecoin share the mempool.space-style response shape, so this
+// one function powers both — caller picks the chain ID prefix and asset.
+export function normalizeUtxo({ txs, address, chain, symbol, coingeckoId, idPrefix }) {
   const out = [];
   for (const tx of txs) {
     let inFromUs = 0;   // sats we contributed via inputs
@@ -265,24 +268,31 @@ export function normalizeLitecoin({ txs, address }) {
     const counterparty = largestKey(direction === 'in' ? otherInputs : otherOutputs) || 'unknown';
 
     const blockTime = tx.status?.block_time || 0;
-    const ltc = Math.abs(netSats) / 1e8;
+    const amount = Math.abs(netSats) / 1e8;
 
     out.push({
-      id: `ltc:${tx.txid}`,
+      id: `${idPrefix}:${tx.txid}`,
       hash: tx.txid,
       blockTime,
       direction,
       counterparty,
-      asset: { symbol: 'LTC', address: 'native', decimals: 8, coingeckoId: 'litecoin' },
-      amount: ltc,
+      asset: { symbol, address: 'native', decimals: 8, coingeckoId },
+      amount,
       usd: null,
       kind: 'native',
-      chain: 'litecoin',
+      chain,
       raw: tx,
     });
   }
   return out.sort((a, b) => a.blockTime - b.blockTime);
 }
+
+// Thin wrappers preserving the older call sites and making intent obvious.
+export const normalizeLitecoin = ({ txs, address }) =>
+  normalizeUtxo({ txs, address, chain: 'litecoin', symbol: 'LTC', coingeckoId: 'litecoin', idPrefix: 'ltc' });
+
+export const normalizeBitcoin = ({ txs, address }) =>
+  normalizeUtxo({ txs, address, chain: 'bitcoin', symbol: 'BTC', coingeckoId: 'bitcoin', idPrefix: 'btc' });
 
 function largestKey(map) {
   let best = null, bestVal = -Infinity;

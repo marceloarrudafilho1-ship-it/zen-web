@@ -13,6 +13,7 @@ const BASES = {
   solana:   'https://solscan.io',
   xrp:      'https://xrpscan.com',
   litecoin: 'https://litecoinspace.org',
+  bitcoin:  'https://mempool.space',
 };
 
 export function explorerUrl(chain, kind, value) {
@@ -48,6 +49,7 @@ export function explorerName(chain) {
     case 'solana':   return 'Solscan';
     case 'xrp':      return 'XRPSCAN';
     case 'litecoin': return 'LitecoinSpace';
+    case 'bitcoin':  return 'mempool.space';
     default:         return 'Explorer';
   }
 }

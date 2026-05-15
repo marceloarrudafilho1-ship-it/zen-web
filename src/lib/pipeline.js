@@ -4,8 +4,9 @@ import { EVM_CHAINS, fetchAllTransactions } from '../api/evm.js';
 import { fetchSolanaTransactions } from '../api/solana.js';
 import { fetchXrplTransactions } from '../api/xrpl.js';
 import { fetchLitecoinTransactions } from '../api/litecoin.js';
+import { fetchBitcoinTransactions } from '../api/bitcoin.js';
 import { getPriceSeries, getPriceSeriesByContract, priceAt } from '../api/prices.js';
-import { normalizeEvm, normalizeSolana, normalizeXrp, normalizeLitecoin, priceTransfers, topByDirection } from './analyzer.js';
+import { normalizeEvm, normalizeSolana, normalizeXrp, normalizeLitecoin, normalizeBitcoin, priceTransfers, topByDirection } from './analyzer.js';
 import { buildBalanceSeries, findExtrema } from './balance.js';
 import { labelFor } from './labels.js';
 import { classifyTemperature } from './temperature.js';
@@ -33,6 +34,10 @@ export async function analyzeWallet({ chain, address, keys, onProgress }) {
     const txs = await fetchLitecoinTransactions({ address, onProgress });
     transfers = normalizeLitecoin({ txs, address });
     chainConfig = { coingeckoId: 'litecoin', symbol: 'LTC', name: 'Litecoin' };
+  } else if (chain === 'bitcoin') {
+    const txs = await fetchBitcoinTransactions({ address, onProgress });
+    transfers = normalizeBitcoin({ txs, address });
+    chainConfig = { coingeckoId: 'bitcoin', symbol: 'BTC', name: 'Bitcoin' };
   } else {
     if (!keys.etherscan) throw new Error('Etherscan API key required — set in Settings.');
     const cfg = EVM_CHAINS[chain];
@@ -209,6 +214,9 @@ export async function traceCounterpartyFlow({ chain, address, direction = 'out',
   } else if (chain === 'litecoin') {
     const txs = await fetchLitecoinTransactions({ address, onProgress, maxPages: 4 });
     transfers = normalizeLitecoin({ txs, address });
+  } else if (chain === 'bitcoin') {
+    const txs = await fetchBitcoinTransactions({ address, onProgress, maxPages: 4 });
+    transfers = normalizeBitcoin({ txs, address });
   } else {
     if (!keys.etherscan) throw new Error('Etherscan API key required');
     const cfg = EVM_CHAINS[chain];
