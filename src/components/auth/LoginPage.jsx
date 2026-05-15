@@ -8,7 +8,7 @@ import { Logo, Lock, Spinner } from '../Icons.jsx';
 
 export function LoginPage({ onAuthed }) {
   const [mode, setMode] = useState('login'); // 'login' | 'signup'
-  const [email, setEmail] = useState('');
+  const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [inviteCode, setInviteCode] = useState('');
   const [busy, setBusy] = useState(false);
@@ -20,9 +20,9 @@ export function LoginPage({ onAuthed }) {
     setBusy(true);
     try {
       if (mode === 'login') {
-        await apiLogin({ email, password });
+        await apiLogin({ username, password });
       } else {
-        await apiSignup({ email, password, inviteCode });
+        await apiSignup({ username, password, inviteCode });
       }
       await onAuthed?.();
     } catch (err) {
@@ -53,15 +53,19 @@ export function LoginPage({ onAuthed }) {
 
           <form onSubmit={submit} className="space-y-3">
             <div>
-              <label className="text-xs uppercase tracking-wider text-zen-muted">Email</label>
+              <label className="text-xs uppercase tracking-wider text-zen-muted">Username</label>
               <input
-                type="email"
-                autoComplete="email"
+                type="text"
+                autoComplete="username"
                 required
+                minLength={3}
+                maxLength={32}
+                pattern="[a-zA-Z0-9_]+"
+                title="Letters, digits, and underscore only."
                 disabled={busy}
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-                placeholder="you@example.com"
+                value={username}
+                onChange={e => setUsername(e.target.value)}
+                placeholder="3–32 chars, letters/digits/_"
                 className="input mt-1"
               />
             </div>
@@ -104,7 +108,7 @@ export function LoginPage({ onAuthed }) {
 
             <button
               type="submit"
-              disabled={busy || !email || !password || (mode === 'signup' && !inviteCode)}
+              disabled={busy || !username || !password || (mode === 'signup' && !inviteCode)}
               className="w-full btn-primary justify-center"
             >
               {busy

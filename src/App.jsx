@@ -13,12 +13,17 @@ import { analyzeWallet, traceCounterpartyFlow } from './lib/pipeline.js';
 import { subscribeNotes, getAllNotes, mergeNotes } from './lib/notes.js';
 import { serializeCase, downloadCase, readCaseFile } from './lib/case-file.js';
 import { useAuth } from './components/auth/AuthGate.jsx';
+import { apiSaveKeys } from './api/auth.js';
 
-const KEY_STORAGE = 'zen.keys.v1';
+const KEY_DEFAULTS = { etherscan: '', helius: '', coingecko: '', snusbase: '', leakpeek: '', web3bio: '' };
 
 export default function App() {
   const { user, logout } = useAuth();
-  const [keys, setKeys] = useState(() => loadKeys());
+  // Keys live server-side under users.api_keys. We hydrate from the user
+  // object returned by /api/auth/me, then mirror locally for instant edits;
+  // persistKeys posts changes back so the next login (or another device) gets
+  // the same set.
+  const [keys, setKeys] = useState(() => ({ ...KEY_DEFAULTS, ...(user?.apiKeys || {}) }));
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [wallets, setWallets] = useState([]);
   const [activeId, setActiveId] = useState(null);
@@ -89,9 +94,15 @@ export default function App() {
     if (!keys.etherscan && !keys.helius) setSettingsOpen(true);
   }, []);
 
+  // Optimistic: update local state immediately, then PUT to /api/auth/keys.
+  // Caller stays sync — fire-and-forget the network round-trip and log if
+  // it fails so the user sees their typing while the save propagates.
   const persistKeys = (next) => {
     setKeys(next);
-    localStorage.setItem(KEY_STORAGE, JSON.stringify(next));
+    apiSaveKeys(next).catch(err => {
+      console.error('Failed to save API keys to server:', err);
+      setCaseMessage({ kind: 'err', text: `Couldn't save keys: ${err.message || err}` });
+    });
   };
 
   const updateWallet = (id, patch) => {
@@ -256,8 +267,8 @@ export default function App() {
               <Settings size={14} /> Settings
             </button>
             <div className="hidden md:flex items-center gap-2 pl-2 ml-1 border-l border-zen-border/60">
-              <span className="text-xs text-zen-muted mono truncate max-w-[160px]" title={user?.email}>
-                {user?.email}
+              <span className="text-xs text-zen-muted mono truncate max-w-[160px]" title={user?.username}>
+                {user?.username}
               </span>
               <button className="btn !py-1 text-xs" onClick={logout} title="Log out">
                 Log out
@@ -516,11 +527,3 @@ function NavTab({ Icon, label, active, onClick }) {
   );
 }
 
-function loadKeys() {
-  const defaults = { etherscan: '', helius: '', coingecko: '', snusbase: '', leakpeek: '', web3bio: '' };
-  try {
-    const raw = localStorage.getItem(KEY_STORAGE);
-    if (raw) return { ...defaults, ...JSON.parse(raw) };
-  } catch {}
-  return defaults;
-}

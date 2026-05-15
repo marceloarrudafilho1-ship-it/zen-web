@@ -17,11 +17,26 @@ async function postJson(path, body) {
   return data;
 }
 
-export const apiSignup = ({ email, password, inviteCode }) =>
-  postJson('/api/auth/signup', { email, password, inviteCode });
+async function putJson(path, body) {
+  const res = await fetch(path, {
+    method: 'PUT',
+    credentials: 'include',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body || {}),
+  });
+  let data = null;
+  try { data = await res.json(); } catch {}
+  if (!res.ok) {
+    throw new Error(data?.error || `Request failed: ${res.status}`);
+  }
+  return data;
+}
 
-export const apiLogin = ({ email, password }) =>
-  postJson('/api/auth/login', { email, password });
+export const apiSignup = ({ username, password, inviteCode }) =>
+  postJson('/api/auth/signup', { username, password, inviteCode });
+
+export const apiLogin = ({ username, password }) =>
+  postJson('/api/auth/login', { username, password });
 
 export const apiLogout = () => postJson('/api/auth/logout', {});
 
@@ -32,3 +47,5 @@ export async function apiWhoAmI() {
   const data = await res.json();
   return data.user || null;
 }
+
+export const apiSaveKeys = (keys) => putJson('/api/auth/keys', keys);
