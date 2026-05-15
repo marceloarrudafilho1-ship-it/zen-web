@@ -8,7 +8,7 @@ import { SettingsModal } from './components/SettingsModal.jsx';
 import { InfoSearch } from './components/InfoSearch.jsx';
 import { ClusterSuggestions } from './components/ClusterSuggestions.jsx';
 import { TransferFilters, EMPTY_FILTER, isFilterActive, applyFilter } from './components/TransferFilters.jsx';
-import { Logo, Settings, Wallet, Info, Save, FolderOpen } from './components/Icons.jsx';
+import { Logo, Settings, Wallet, Info, Save, FolderOpen, User } from './components/Icons.jsx';
 import { analyzeWallet, traceCounterpartyFlow } from './lib/pipeline.js';
 import { subscribeNotes, getAllNotes, mergeNotes } from './lib/notes.js';
 import { serializeCase, downloadCase, readCaseFile } from './lib/case-file.js';
@@ -266,11 +266,21 @@ export default function App() {
             <button className="btn" onClick={() => setSettingsOpen(true)}>
               <Settings size={14} /> Settings
             </button>
-            <div className="hidden md:flex items-center gap-2 pl-2 ml-1 border-l border-zen-border/60">
-              <span className="text-xs text-zen-muted mono truncate max-w-[160px]" title={user?.username}>
-                {user?.username}
+            <div className="hidden md:flex items-center gap-1.5 pl-3 ml-1 border-l border-zen-border/60">
+              <span
+                className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-full
+                  bg-zen-accent/10 text-zen-accent border border-zen-accent/30
+                  text-xs mono max-w-[180px]"
+                title={user?.username}
+              >
+                <User size={12} />
+                <span className="truncate">{user?.username}</span>
               </span>
-              <button className="btn !py-1 text-xs" onClick={logout} title="Log out">
+              <button
+                onClick={logout}
+                title="Log out"
+                className="text-xs text-zen-muted hover:text-zen-text hover:bg-zen-panel rounded-md px-2 py-1.5 transition"
+              >
                 Log out
               </button>
             </div>
