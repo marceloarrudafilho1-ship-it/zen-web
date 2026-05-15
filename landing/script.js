@@ -364,3 +364,91 @@
     setTimeout(() => ripple.remove(), 700);
   });
 })();
+
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   Animated number counters. Any [data-counter] element with
+   data-target="N" eases from 0 â†’ N over ~1.2s once it scrolls
+   into view. Optional data-suffix appends after the number.
+   â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+(() => {
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const targets = document.querySelectorAll('[data-counter]');
+  if (targets.length === 0) return;
+
+  const animate = (el) => {
+    const target = Number(el.dataset.target);
+    const suffix = el.dataset.suffix || '';
+    if (Number.isNaN(target)) return;
+    if (reduceMotion) { el.textContent = target + suffix; return; }
+    const dur = 1200;
+    const t0 = performance.now();
+    const tick = (now) => {
+      const p = Math.min(1, (now - t0) / dur);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(target * eased) + suffix;
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  };
+
+  if (!('IntersectionObserver' in window)) {
+    targets.forEach(animate);
+    return;
+  }
+  const io = new IntersectionObserver((entries) => {
+    for (const entry of entries) {
+      if (entry.isIntersecting) {
+        animate(entry.target);
+        io.unobserve(entry.target);
+      }
+    }
+  }, { threshold: 0.5 });
+  targets.forEach(el => io.observe(el));
+})();
+
+/* â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+   Terminal typewriter. Splits the contents of a
+   [data-typewriter] <pre> on newlines and re-appends them as
+   .term__line spans on a short delay so they fade in one by one.
+   Preserves any inline span markup the original line had.
+   â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+(() => {
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const els = document.querySelectorAll('[data-typewriter]');
+  if (els.length === 0) return;
+
+  els.forEach((el) => {
+    const original = el.innerHTML;
+    if (reduceMotion) return;
+    const lines = original.split('\n');
+    el.innerHTML = '';
+
+    const play = () => {
+      let i = 0;
+      const tick = () => {
+        if (i >= lines.length) return;
+        const span = document.createElement('span');
+        span.className = 'term__line';
+        // Append the line and the newline that the <pre> needs to render
+        // the next line beneath this one.
+        span.innerHTML = lines[i] + (i < lines.length - 1 ? '\n' : '');
+        el.appendChild(span);
+        i++;
+        // Slight randomness so it feels like a process, not a script.
+        const next = lines[i] && lines[i].trim() === '' ? 60 : 110 + Math.random() * 90;
+        setTimeout(tick, next);
+      };
+      tick();
+    };
+
+    if (!('IntersectionObserver' in window)) { play(); return; }
+    const io = new IntersectionObserver((entries) => {
+      if (entries[0].isIntersecting) {
+        play();
+        io.disconnect();
+      }
+    }, { threshold: 0.4 });
+    io.observe(el);
+  });
+})();
+
