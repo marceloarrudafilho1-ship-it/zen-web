@@ -13,6 +13,7 @@ import 'dotenv/config';
 import { migrate } from './db.js';
 import authRouter, { attachUser } from './auth.js';
 import aiRouter from './ai.js';
+import proxyRouter from './proxy.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -44,6 +45,9 @@ app.use('/api/auth', authRouter);
 
 // AI features (gated by users.ai_enabled and ANTHROPIC_API_KEY).
 app.use('/api/ai', aiRouter);
+
+// Premium-tier on-chain data proxy (NOWNodes-backed, ai_enabled-gated).
+app.use('/api/proxy', proxyRouter);
 
 // Static assets emitted by Vite live under dist/assets — serve them at
 // /assets, plus any other static file (logos, etc.).

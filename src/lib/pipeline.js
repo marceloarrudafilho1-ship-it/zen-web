@@ -16,10 +16,40 @@ import { resolveBatch, resolveName } from './ens.js';
 // Cap concurrent token price fetches so we don't hammer CoinGecko's free tier.
 const MAX_TOKENS_TO_PRICE = 25;
 
-export async function analyzeWallet({ chain, address, keys, onProgress }) {
+// Chains served by the server-side NOWNodes proxy for premium users.
+// Kept narrow on purpose — only chains whose response shape is a clean
+// drop-in for the existing normalisers go here.
+const PREMIUM_PROXY_CHAINS = new Set(['bitcoin', 'litecoin']);
+
+function shouldUsePremiumProxy(user, chain) {
+  return !!user?.aiEnabled && PREMIUM_PROXY_CHAINS.has(chain);
+}
+
+// Hits /api/proxy/wallet/:chain/:address. The server returns the same
+// mempool.space-style tx shape that fetchBitcoinTransactions /
+// fetchLitecoinTransactions would have produced, so the caller can feed
+// the result straight into normalizeBitcoin / normalizeLitecoin.
+async function fetchViaPremiumProxy(chain, address, onProgress) {
+  onProgress?.(`Fetching ${chain} transactions via NOWNodes…`);
+  const res = await fetch(
+    `/api/proxy/wallet/${chain}/${encodeURIComponent(address)}`,
+    { credentials: 'include' },
+  );
+  if (!res.ok) {
+    let detail = '';
+    try { detail = (await res.json())?.error || ''; } catch {}
+    throw new Error(detail || `Proxy fetch failed: HTTP ${res.status}`);
+  }
+  const data = await res.json();
+  return data.transactions || [];
+}
+
+export async function analyzeWallet({ chain, address, keys, user, onProgress }) {
   onProgress?.('Fetching transactions…');
   let transfers;
   let chainConfig;
+
+  const usePremiumProxy = shouldUsePremiumProxy(user, chain);
 
   if (chain === 'solana') {
     if (!keys.helius) throw new Error('Helius API key required for Solana — set in Settings.');
@@ -31,11 +61,15 @@ export async function analyzeWallet({ chain, address, keys, onProgress }) {
     transfers = normalizeXrp({ txs, address });
     chainConfig = { coingeckoId: 'ripple', symbol: 'XRP', name: 'XRP' };
   } else if (chain === 'litecoin') {
-    const txs = await fetchLitecoinTransactions({ address, onProgress });
+    const txs = usePremiumProxy
+      ? await fetchViaPremiumProxy('litecoin', address, onProgress)
+      : await fetchLitecoinTransactions({ address, onProgress });
     transfers = normalizeLitecoin({ txs, address });
     chainConfig = { coingeckoId: 'litecoin', symbol: 'LTC', name: 'Litecoin' };
   } else if (chain === 'bitcoin') {
-    const txs = await fetchBitcoinTransactions({ address, onProgress });
+    const txs = usePremiumProxy
+      ? await fetchViaPremiumProxy('bitcoin', address, onProgress)
+      : await fetchBitcoinTransactions({ address, onProgress });
     transfers = normalizeBitcoin({ txs, address });
     chainConfig = { coingeckoId: 'bitcoin', symbol: 'BTC', name: 'Bitcoin' };
   } else {
@@ -193,13 +227,15 @@ const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 // its outflows ("where did the money go after that?") or its inflows ("where
 // did the money originally come from?"). Skips price lookups (too slow for
 // interactive use); top-N is by amount within asset.
-export async function traceCounterpartyFlow({ chain, address, direction = 'out', keys, limit = 5, onProgress }) {
+export async function traceCounterpartyFlow({ chain, address, direction = 'out', keys, user, limit = 5, onProgress }) {
   if (!address || address === 'native' || address === 'DEX') {
     throw new Error('Counterparty has no on-chain address to trace');
   }
   if (direction !== 'in' && direction !== 'out') {
     throw new Error(`Invalid trace direction: ${direction}`);
   }
+
+  const usePremiumProxy = shouldUsePremiumProxy(user, chain);
 
   let transfers = [];
   if (chain === 'solana') {
@@ -212,10 +248,14 @@ export async function traceCounterpartyFlow({ chain, address, direction = 'out',
     const txs = await fetchXrplTransactions({ address, onProgress, limit: 200 });
     transfers = normalizeXrp({ txs, address });
   } else if (chain === 'litecoin') {
-    const txs = await fetchLitecoinTransactions({ address, onProgress, maxPages: 4 });
+    const txs = usePremiumProxy
+      ? await fetchViaPremiumProxy('litecoin', address, onProgress)
+      : await fetchLitecoinTransactions({ address, onProgress, maxPages: 4 });
     transfers = normalizeLitecoin({ txs, address });
   } else if (chain === 'bitcoin') {
-    const txs = await fetchBitcoinTransactions({ address, onProgress, maxPages: 4 });
+    const txs = usePremiumProxy
+      ? await fetchViaPremiumProxy('bitcoin', address, onProgress)
+      : await fetchBitcoinTransactions({ address, onProgress, maxPages: 4 });
     transfers = normalizeBitcoin({ txs, address });
   } else {
     if (!keys.etherscan) throw new Error('Etherscan API key required');

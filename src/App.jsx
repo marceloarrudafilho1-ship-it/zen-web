@@ -127,7 +127,7 @@ export default function App() {
 
     try {
       const result = await analyzeWallet({
-        chain, address: norm, keys,
+        chain, address: norm, keys, user,
         onProgress: (msg) => updateWallet(id, { statusMsg: msg }),
       });
       updateWallet(id, {
@@ -154,7 +154,7 @@ export default function App() {
     const seedHops = { ...(w.hops || {}), [key]: { status: 'loading', direction } };
     updateWallet(walletId, { hops: seedHops });
     try {
-      const flows = await traceCounterpartyFlow({ chain, address: counterparty, direction, keys, limit: 5 });
+      const flows = await traceCounterpartyFlow({ chain, address: counterparty, direction, keys, user, limit: 5 });
       setWallets(prev => prev.map(x => x.id === walletId
         ? { ...x, hops: { ...(x.hops || {}), [key]: { status: 'done', direction, flows } } }
         : x));
@@ -187,7 +187,7 @@ export default function App() {
       patch({ progress: `Tracing hop ${hop} of ${maxHops}…` });
       let flows;
       try {
-        flows = await traceCounterpartyFlow({ chain, address: current, direction: 'out', keys, limit: 5 });
+        flows = await traceCounterpartyFlow({ chain, address: current, direction: 'out', keys, user, limit: 5 });
       } catch (err) {
         console.error(err);
         patch({ status: 'error', error: err.message || String(err), path });
