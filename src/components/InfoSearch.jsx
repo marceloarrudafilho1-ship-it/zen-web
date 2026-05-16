@@ -5,6 +5,7 @@ import { shortAddr } from '../lib/format.js';
 import {
   Search, Mail, User, Tag, Globe, Server, IdCard, Hash, Phone, Spinner, External,
 } from './Icons.jsx';
+import { useAuth } from './auth/AuthGate.jsx';
 
 const TYPES = [
   { id: 'email',    label: 'Email',      Icon: Mail,   placeholder: 'name@domain.com' },
@@ -18,6 +19,7 @@ const TYPES = [
 ];
 
 export function InfoSearch({ keys }) {
+  const { user } = useAuth();
   const [type, setType] = useState('email');
   const [term, setTerm] = useState('');
   const [busy, setBusy] = useState(false);
@@ -53,6 +55,8 @@ export function InfoSearch({ keys }) {
       <UsefulLinks />
 
       <Web3BioLookup apiKey={keys.web3bio} />
+
+      {user?.aiEnabled && <OsintDogSearch hasKey={!!keys.osintdog} />}
 
       <div className="card p-5">
         <div className="flex items-baseline justify-between mb-1">
@@ -226,9 +230,8 @@ function BreachRow({ row }) {
 // <a target="_blank"> — Electron's setWindowOpenHandler routes these through
 // shell.openExternal so they open in the user's default browser.
 const USEFUL_LINKS = [
-  { name: 'Cypher Dynamics', url: 'https://cypherdynamics.com',     blurb: 'On-chain forensics & threat intel' },
-  { name: 'OSINT Dog',       url: 'https://osintdog.com',           blurb: 'OSINT tooling directory' },
-  { name: 'Lol Archiver',    url: 'https://lolarchiver.com/',       blurb: 'League-of-Legends-era handle archive' },
+  { name: 'Cypher Dynamics', url: 'https://cypherdynamics.com', blurb: 'On-chain forensics & threat intel' },
+  { name: 'Lol Archiver',    url: 'https://lolarchiver.com/',   blurb: 'League-of-Legends-era handle archive' },
 ];
 
 function UsefulLinks() {
@@ -236,7 +239,7 @@ function UsefulLinks() {
     <div className="card p-5">
       <h2 className="text-lg font-semibold">Useful tools</h2>
       <p className="text-xs text-zen-muted mt-1 mb-4">Third-party OSINT resources — opens in your browser.</p>
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         {USEFUL_LINKS.map(link => (
           <a key={link.url}
             href={link.url}
@@ -405,6 +408,192 @@ function Web3BioProfile({ profile }) {
               <External size={9} />
             </a>
           ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────
+// OSINT Dog universal search — premium-only. Hits POST /api/osintdog/search
+// on our server, which forwards to https://osintdog.com/api/search using
+// the user's stored OSINT Dog API key. Covers LeakCheck + HackCheck in
+// one round-trip.
+// ─────────────────────────────────────────────────────────────────────────
+
+const OSINTDOG_TYPES = [
+  { id: 'email',    label: 'Email',    Icon: Mail,   placeholder: 'name@domain.com' },
+  { id: 'username', label: 'Username', Icon: User,   placeholder: 'handle' },
+  { id: 'phone',    label: 'Phone',    Icon: Phone,  placeholder: '+1 555 123 4567' },
+  { id: 'domain',   label: 'Domain',   Icon: Globe,  placeholder: 'example.com' },
+  { id: 'ip',       label: 'IP',       Icon: Server, placeholder: '203.0.113.42' },
+];
+
+function OsintDogSearch({ hasKey }) {
+  const [type, setType] = useState('email');
+  const [value, setValue] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [results, setResults] = useState(null);
+  const [error, setError] = useState(null);
+  const active = OSINTDOG_TYPES.find(t => t.id === type);
+
+  const submit = async (e) => {
+    e.preventDefault();
+    const v = value.trim();
+    if (!v || busy) return;
+    setBusy(true);
+    setError(null);
+    setResults(null);
+    try {
+      const res = await fetch('/api/osintdog/search', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ type, value: v }),
+      });
+      let data = null;
+      try { data = await res.json(); } catch {}
+      if (!res.ok) throw new Error(data?.error || `Request failed: ${res.status}`);
+      setResults(data?.response ?? data);
+    } catch (err) {
+      setError(err.message || String(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="card p-5">
+      <div className="flex items-baseline justify-between mb-1">
+        <h2 className="text-lg font-semibold">OSINT Dog universal search</h2>
+        <span className="inline-flex items-center gap-1 text-[10px] uppercase tracking-wider px-1.5 py-0.5 rounded mono
+          bg-zen-accent/10 text-zen-accent border border-zen-accent/30">
+          Premium
+        </span>
+      </div>
+      <p className="text-xs text-zen-muted mb-4">
+        Queries LeakCheck and HackCheck through OSINT Dog in one request. Configure your API key in
+        <span className="text-zen-text font-medium"> Settings</span>.
+      </p>
+
+      <div className="flex flex-wrap gap-1.5 mb-4 p-1 bg-[#0d0d10]/60 rounded-lg border border-zen-border">
+        {OSINTDOG_TYPES.map(t => (
+          <button
+            key={t.id}
+            onClick={() => setType(t.id)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs transition
+              ${type === t.id
+                ? 'bg-zen-panel text-zen-text shadow-[0_0_0_1px_rgb(var(--zen-accent-rgb)/0.4)]'
+                : 'text-zen-muted hover:text-zen-text hover:bg-zen-panel/50'}`}
+          >
+            <t.Icon size={12} />
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <form onSubmit={submit} className="flex gap-2 items-stretch">
+        <input
+          value={value}
+          onChange={e => setValue(e.target.value)}
+          placeholder={active?.placeholder}
+          className="input flex-1 h-10"
+          disabled={busy}
+        />
+        <button
+          type="submit"
+          disabled={busy || !value.trim() || !hasKey}
+          className="h-10 px-5 rounded-lg font-medium text-sm flex items-center gap-1.5 shrink-0
+            bg-zen-accent/10 text-zen-accent ring-1 ring-zen-accent/40
+            hover:bg-zen-accent/20 hover:ring-zen-accent/60
+            transition disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {busy ? <><Spinner size={14} /> Searching…</> : 'Search'}
+        </button>
+      </form>
+
+      {!hasKey && (
+        <div className="mt-3 text-xs text-amber-400 border border-amber-500/30 bg-amber-500/5 rounded-md px-3 py-2">
+          Add your OSINT Dog API key in Settings to enable this search.
+        </div>
+      )}
+
+      {error && (
+        <div className="mt-3 text-xs text-zen-red border border-zen-red/30 bg-zen-red/5 rounded-md px-3 py-2">
+          {error}
+        </div>
+      )}
+
+      {results && <OsintDogResults data={results} />}
+    </div>
+  );
+}
+
+// Renders whatever OSINT Dog returned. The universal endpoint's exact
+// response shape isn't documented field-by-field, so we walk through any
+// arrays we recognise (`results`, `data`, etc.) and fall back to a raw
+// JSON view for anything we don't.
+function OsintDogResults({ data }) {
+  // Friendly cases first
+  if (Array.isArray(data?.results)) {
+    return (
+      <div className="mt-4 space-y-3">
+        {data.results.map((group, i) => (
+          <OsintDogGroup key={i} group={group} />
+        ))}
+      </div>
+    );
+  }
+  if (Array.isArray(data)) {
+    return (
+      <div className="mt-4 space-y-3">
+        {data.map((group, i) => (
+          <OsintDogGroup key={i} group={group} />
+        ))}
+      </div>
+    );
+  }
+  // Fallback: raw JSON, so nothing is hidden from the user
+  return (
+    <pre className="mt-4 text-[10px] text-zen-muted mono bg-[#0d0d10]/40 rounded p-3
+      overflow-auto max-h-[480px] border border-zen-border">
+      {JSON.stringify(data, null, 2)}
+    </pre>
+  );
+}
+
+function OsintDogGroup({ group }) {
+  const [open, setOpen] = useState(false);
+  const label = group?.service || group?.source || group?.name || 'Result';
+  const count = group?.entries_count
+    ?? (Array.isArray(group?.entries) ? group.entries.length : null)
+    ?? (Array.isArray(group?.data) ? group.data.length : null);
+  const entries = group?.entries || group?.data || [];
+
+  return (
+    <div className="border border-zen-border rounded-lg overflow-hidden">
+      <button
+        onClick={() => setOpen(o => !o)}
+        className="w-full flex items-center justify-between px-3 py-2 bg-[#0d0d10]/50 hover:bg-[#16161b]/50 transition"
+      >
+        <div className="flex items-center gap-2">
+          <span className="w-1.5 h-1.5 rounded-full bg-zen-accent" />
+          <span className="font-medium text-sm">{label}</span>
+        </div>
+        {count != null && (
+          <span className="text-xs text-zen-muted mono">{count} {count === 1 ? 'row' : 'rows'}</span>
+        )}
+      </button>
+      {open && (
+        <div className="px-3 py-2 space-y-2 border-t border-zen-border">
+          {Array.isArray(entries) && entries.length > 0
+            ? entries.slice(0, 50).map((row, i) => <BreachRow key={i} row={row} />)
+            : <pre className="text-[10px] text-zen-muted mono">{JSON.stringify(group, null, 2)}</pre>}
+          {Array.isArray(entries) && entries.length > 50 && (
+            <div className="text-[10px] text-zen-muted text-center py-1">
+              {entries.length - 50} more rows hidden
+            </div>
+          )}
         </div>
       )}
     </div>

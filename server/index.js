@@ -14,6 +14,7 @@ import { migrate } from './db.js';
 import authRouter, { attachUser } from './auth.js';
 import aiRouter from './ai.js';
 import proxyRouter from './proxy.js';
+import osintdogRouter from './osintdog.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -48,6 +49,9 @@ app.use('/api/ai', aiRouter);
 
 // Premium-tier on-chain data proxy (NOWNodes-backed, ai_enabled-gated).
 app.use('/api/proxy', proxyRouter);
+
+// Premium-tier OSINT Dog universal-search proxy (per-user key, ai_enabled-gated).
+app.use('/api/osintdog', osintdogRouter);
 
 // Static assets emitted by Vite live under dist/assets — serve them at
 // /assets, plus any other static file (logos, etc.).

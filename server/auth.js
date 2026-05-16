@@ -17,7 +17,7 @@ const TOKEN_TTL_SECONDS = 60 * 60 * 24 * 14; // 14 days
 
 // Whitelist of recognised key names — protects us from a client trying to
 // stash arbitrary fields under api_keys.
-const ALLOWED_KEYS = ['etherscan', 'helius', 'coingecko', 'snusbase', 'leakpeek', 'web3bio'];
+const ALLOWED_KEYS = ['etherscan', 'helius', 'coingecko', 'snusbase', 'leakpeek', 'web3bio', 'osintdog'];
 
 function getSecret() {
   const s = process.env.JWT_SECRET;

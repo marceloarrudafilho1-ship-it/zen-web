@@ -16,7 +16,7 @@ import { serializeCase, downloadCase, readCaseFile } from './lib/case-file.js';
 import { useAuth } from './components/auth/AuthGate.jsx';
 import { apiSaveKeys } from './api/auth.js';
 
-const KEY_DEFAULTS = { etherscan: '', helius: '', coingecko: '', snusbase: '', leakpeek: '', web3bio: '' };
+const KEY_DEFAULTS = { etherscan: '', helius: '', coingecko: '', snusbase: '', leakpeek: '', web3bio: '', osintdog: '' };
 
 export default function App() {
   const { user, logout } = useAuth();

@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Close, Lock, External, Eye, EyeOff } from './Icons.jsx';
 import { PALETTES, useTheme, setTheme } from '../lib/theme.js';
+import { useAuth } from './auth/AuthGate.jsx';
 
 export function SettingsModal({ open, onClose, keys, onSave }) {
   const [draft, setDraft] = useState(keys);
   const theme = useTheme();
+  const { user } = useAuth();
 
   if (!open) return null;
 
@@ -105,6 +107,15 @@ export function SettingsModal({ open, onClose, keys, onSave }) {
                 value={draft.web3bio}
                 onChange={v => setDraft(d => ({ ...d, web3bio: v }))}
               />
+              {user?.aiEnabled && (
+                <Field
+                  label="OSINT Dog (premium)"
+                  sub="Universal search across LeakCheck + HackCheck — premium tier only"
+                  link="https://osintdog.com/"
+                  value={draft.osintdog}
+                  onChange={v => setDraft(d => ({ ...d, osintdog: v }))}
+                />
+              )}
             </div>
           </div>
         </div>
