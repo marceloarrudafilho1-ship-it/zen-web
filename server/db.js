@@ -43,6 +43,11 @@ export async function migrate() {
       api_keys      JSONB NOT NULL DEFAULT '{}'::jsonb,
       created_at    TIMESTAMPTZ NOT NULL DEFAULT NOW()
     );
+
+    -- Idempotent column add for existing deployments that pre-date the
+    -- "Explain this wallet" feature. New rows default to false; granted by
+    -- signing up with INVITE_CODE_PREMIUM, or by flipping the flag manually.
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS ai_enabled BOOLEAN NOT NULL DEFAULT FALSE;
   `);
   console.log('[db] migration complete');
 }

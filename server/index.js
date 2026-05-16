@@ -12,6 +12,7 @@ import 'dotenv/config';
 
 import { migrate } from './db.js';
 import authRouter, { attachUser } from './auth.js';
+import aiRouter from './ai.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const ROOT = path.resolve(__dirname, '..');
@@ -22,8 +23,16 @@ const app = express();
 // Default helmet CSP is too strict for the SPA pulling remote APIs
 // (Etherscan, Helius, web3.bio, etc.).
 app.use(helmet({ contentSecurityPolicy: false, crossOriginEmbedderPolicy: false }));
-app.use(compression());
-app.use(express.json({ limit: '64kb' }));
+// Compress everything except SSE streams — buffering would defeat the whole
+// point of streaming, and Express's default compression filter doesn't know
+// about text/event-stream.
+app.use(compression({
+  filter: (req, res) => {
+    if (req.path.startsWith('/api/ai/')) return false;
+    return compression.filter(req, res);
+  },
+}));
+app.use(express.json({ limit: '256kb' })); // wallet summaries can run a bit over the old 64kb cap
 app.use(cookieParser());
 app.use(attachUser);
 
@@ -32,6 +41,9 @@ app.get('/healthz', (_req, res) => res.json({ ok: true }));
 
 // Auth + per-user key management.
 app.use('/api/auth', authRouter);
+
+// AI features (gated by users.ai_enabled and ANTHROPIC_API_KEY).
+app.use('/api/ai', aiRouter);
 
 // Static assets emitted by Vite live under dist/assets — serve them at
 // /assets, plus any other static file (logos, etc.).

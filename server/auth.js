@@ -94,10 +94,29 @@ function sanitiseKeys(obj) {
 
 async function loadUserById(id) {
   const { rows } = await pool.query(
-    'SELECT id, username, api_keys FROM users WHERE id = $1',
+    'SELECT id, username, api_keys, ai_enabled FROM users WHERE id = $1',
     [id],
   );
   return rows[0] || null;
+}
+
+// Re-used by the AI router as an auth middleware that also enforces tier.
+export function requireAi(req, res, next) {
+  if (!req.user) return res.status(401).json({ error: 'Not authenticated' });
+  // The JWT only stores uid + username; we re-check the DB so revoking
+  // AI access from a user takes effect on their next request, not on a
+  // fresh login. Cheap enough — one indexed SELECT per AI call.
+  pool.query('SELECT ai_enabled FROM users WHERE id = $1', [req.user.uid])
+    .then(({ rows }) => {
+      if (!rows[0]?.ai_enabled) {
+        return res.status(403).json({ error: 'AI features are not enabled for this account.' });
+      }
+      next();
+    })
+    .catch((err) => {
+      console.error('[auth] requireAi DB check failed:', err);
+      res.status(500).json({ error: 'Server error verifying AI access.' });
+    });
 }
 
 router.post('/signup', async (req, res) => {
@@ -113,11 +132,19 @@ router.post('/signup', async (req, res) => {
       return res.status(400).json({ error: 'Password must be 8–200 characters.' });
     }
 
-    const expected = process.env.INVITE_CODE;
-    if (!expected) {
+    const basic = process.env.INVITE_CODE;
+    const premium = process.env.INVITE_CODE_PREMIUM;
+    if (!basic && !premium) {
       return res.status(503).json({ error: 'Signups are disabled — server has no INVITE_CODE configured.' });
     }
-    if (inviteCode !== expected) {
+
+    // Premium code is checked first so it wins ties when both env vars
+    // happen to share a value. Match against the configured codes only —
+    // ignore the empty-string fallback so missing premium doesn't match "".
+    let aiEnabled = false;
+    if (premium && inviteCode === premium) {
+      aiEnabled = true;
+    } else if (!basic || inviteCode !== basic) {
       return res.status(403).json({ error: 'Invalid invite code.' });
     }
 
@@ -128,13 +155,20 @@ router.post('/signup', async (req, res) => {
 
     const hash = await bcrypt.hash(password, 12);
     const { rows } = await pool.query(
-      'INSERT INTO users (username, password_hash) VALUES ($1, $2) RETURNING id, username, api_keys',
-      [username, hash],
+      'INSERT INTO users (username, password_hash, ai_enabled) VALUES ($1, $2, $3) RETURNING id, username, api_keys, ai_enabled',
+      [username, hash, aiEnabled],
     );
     const user = rows[0];
 
     setSessionCookie(res, signTokenForUser(user));
-    return res.json({ user: { id: user.id, username: user.username, apiKeys: user.api_keys || {} } });
+    return res.json({
+      user: {
+        id: user.id,
+        username: user.username,
+        apiKeys: user.api_keys || {},
+        aiEnabled: !!user.ai_enabled,
+      },
+    });
   } catch (err) {
     console.error('[auth] signup failed:', err);
     return res.status(500).json({ error: 'Server error during signup.' });
@@ -150,7 +184,7 @@ router.post('/login', async (req, res) => {
     }
 
     const { rows } = await pool.query(
-      'SELECT id, username, password_hash, api_keys FROM users WHERE username = $1',
+      'SELECT id, username, password_hash, api_keys, ai_enabled FROM users WHERE username = $1',
       [username],
     );
     const user = rows[0];
@@ -161,7 +195,14 @@ router.post('/login', async (req, res) => {
     }
 
     setSessionCookie(res, signTokenForUser(user));
-    return res.json({ user: { id: user.id, username: user.username, apiKeys: user.api_keys || {} } });
+    return res.json({
+      user: {
+        id: user.id,
+        username: user.username,
+        apiKeys: user.api_keys || {},
+        aiEnabled: !!user.ai_enabled,
+      },
+    });
   } catch (err) {
     console.error('[auth] login failed:', err);
     return res.status(500).json({ error: 'Server error during login.' });
@@ -182,7 +223,14 @@ router.get('/me', async (req, res) => {
       clearSessionCookie(res);
       return res.status(401).json({ error: 'Account no longer exists.' });
     }
-    return res.json({ user: { id: user.id, username: user.username, apiKeys: user.api_keys || {} } });
+    return res.json({
+      user: {
+        id: user.id,
+        username: user.username,
+        apiKeys: user.api_keys || {},
+        aiEnabled: !!user.ai_enabled,
+      },
+    });
   } catch (err) {
     console.error('[auth] me failed:', err);
     return res.status(500).json({ error: 'Server error.' });

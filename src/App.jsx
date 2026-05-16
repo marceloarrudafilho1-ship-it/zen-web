@@ -8,7 +8,8 @@ import { SettingsModal } from './components/SettingsModal.jsx';
 import { InfoSearch } from './components/InfoSearch.jsx';
 import { ClusterSuggestions } from './components/ClusterSuggestions.jsx';
 import { TransferFilters, EMPTY_FILTER, isFilterActive, applyFilter } from './components/TransferFilters.jsx';
-import { Logo, Settings, Wallet, Info, Save, FolderOpen, User } from './components/Icons.jsx';
+import { Logo, Settings, Wallet, Info, Save, FolderOpen, User, Sparkle } from './components/Icons.jsx';
+import { ExplainModal } from './components/ExplainModal.jsx';
 import { analyzeWallet, traceCounterpartyFlow } from './lib/pipeline.js';
 import { subscribeNotes, getAllNotes, mergeNotes } from './lib/notes.js';
 import { serializeCase, downloadCase, readCaseFile } from './lib/case-file.js';
@@ -25,6 +26,7 @@ export default function App() {
   // the same set.
   const [keys, setKeys] = useState(() => ({ ...KEY_DEFAULTS, ...(user?.apiKeys || {}) }));
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [explainOpen, setExplainOpen] = useState(false);
   const [wallets, setWallets] = useState([]);
   const [activeId, setActiveId] = useState(null);
   const [selection, setSelection] = useState(null); // { kind: 'tx'|'wallet'|'extremum', id, tx?, point?, extremum? }
@@ -263,6 +265,18 @@ export default function App() {
               title={wallets.length === 0 ? 'Nothing to save yet' : 'Save the current investigation as a .zen case file'}>
               <Save size={14} /> Save case
             </button>
+            {user?.aiEnabled && (
+              <button
+                className="btn"
+                onClick={() => setExplainOpen(true)}
+                disabled={!active?.result}
+                title={active?.result
+                  ? 'Generate an AI-written analysis of the active wallet'
+                  : 'Load a wallet first'}
+              >
+                <Sparkle size={14} /> Explain
+              </button>
+            )}
             <button className="btn" onClick={() => setSettingsOpen(true)}>
               <Settings size={14} /> Settings
             </button>
@@ -355,6 +369,8 @@ export default function App() {
       </footer>
 
       <SettingsModal open={settingsOpen} onClose={() => setSettingsOpen(false)} keys={keys} onSave={persistKeys} />
+
+      <ExplainModal open={explainOpen} onClose={() => setExplainOpen(false)} wallet={active} />
 
       {/* Hidden picker — driven by the "Open" button. Allows .zen and .json
           because some users may rename the file before sending it. */}
